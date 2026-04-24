@@ -63,13 +63,24 @@ src/libslic3r/SyncManager.hpp  - Sync orchestrator
 src/libslic3r/SyncManager.cpp  - Implementation
 ```
 
-## Fase 6: UI Integratie (PENDING - vereist wxWidgets integratie)
-- [ ] Sync knop in UI (MainFrame/Tab)
-- [ ] Sync status indicator  
-- [ ] Conflict resolution dialog
+## Fase 6: UI Integratie (IN UITVOERING)
+- [x] SyncStatusPanel.hpp - UI component voor sync status
+- [x] SyncStatusPanel.cpp - Implementatie met timer refresh
+- [ ] Integratie in MainFrame of Tab (vereist wxWidgets integratie)
 
-**Note:** UI integratie vereist wijzigingen aan MainFrame/Tab pagina's en is complexer. 
-De backend logica (SyncManager) is klaar voor gebruik.
+### UI Source
+```
+src/slic3r/GUI/SyncStatusPanel.hpp  - Sync status panel header
+src/slic3r/GUI/SyncStatusPanel.cpp  - Sync status panel implementation
+```
+
+### SyncStatusPanel functionaliteit
+- Toont sync status (Offline/Idle/Syncing/Error)
+- Toont pending changes count
+- Sync button met retry functionaliteit
+- Auto-refresh via timer
+
+**Note:** Volledige integratie in MainFrame/Tab vereist nog compileren en testen.
 
 ## Fase 7: Testing & Polish (NOG TE DOEN)
 - [ ] Unit tests
