@@ -36,11 +36,19 @@ src/libslic3r/ConfigDatabase.hpp  - Interface definition
 src/libslic3r/ConfigDatabase.cpp  - REST client implementation
 ```
 
-## Fase 4: PresetBundle Integratie (NOG TE DOEN)
-- [ ] PresetBundle::load_from_db()
-- [ ] PresetCollection::load_from_db()
-- [ ] PresetBundle::save_to_db()
-- [ ] Inheritance resolution van DB
+## Fase 4: PresetBundle Integratie (AFGEROND)
+- [x] PresetBundleDB.hpp - Integration layer
+- [x] PresetBundleDB.cpp - Implementation
+- [x] load_presets_from_db()
+- [x] save_preset_to_db()
+- [x] sync_from_db() / sync_to_db()
+- [x] login_and_sync() convenience method
+
+### C++ Source
+```
+src/libslic3r/PresetBundleDB.hpp  - Integration interface
+src/libslic3r/PresetBundleDB.cpp  - Implementation
+```
 
 ## Fase 5: Sync Logic (NOG TE DOEN)
 - [ ] sync_pull() implementatie
