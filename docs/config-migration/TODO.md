@@ -24,11 +24,17 @@
   - [x] POST /api/sync/push
   - [x] GET /api/sync/state
 
-## Fase 3: C++ ConfigDatabase (NOG TE DOEN)
-- [ ] ConfigDatabase.hpp - Interface
-- [ ] ConfigDatabase.cpp - HTTP/REST implementatie
-- [ ] JSON serialization/deserialization
-- [ ] Connection pooling
+## Fase 3: C++ ConfigDatabase (AFGEROND)
+- [x] ConfigDatabase.hpp - Interface
+- [x] ConfigDatabase.cpp - HTTP/REST implementatie
+- [x] JSON serialization/deserialization
+- [x] Connection pooling (via existing Http.hpp)
+
+### C++ Source
+```
+src/libslic3r/ConfigDatabase.hpp  - Interface definition
+src/libslic3r/ConfigDatabase.cpp  - REST client implementation
+```
 
 ## Fase 4: PresetBundle Integratie (NOG TE DOEN)
 - [ ] PresetBundle::load_from_db()
