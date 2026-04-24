@@ -50,16 +50,26 @@ src/libslic3r/PresetBundleDB.hpp  - Integration interface
 src/libslic3r/PresetBundleDB.cpp  - Implementation
 ```
 
-## Fase 5: Sync Logic (NOG TE DOEN)
-- [ ] sync_pull() implementatie
-- [ ] sync_push() implementatie
-- [ ] Conflict resolution (server wins)
-- [ ] Offline mode / queue
+## Fase 5: Sync Logic (AFGEROND)
+- [x] SyncManager.hpp - Offline queue en sync orchestrator
+- [x] SyncManager.cpp - Implementation
+- [x] Offline queue voor pending changes
+- [x] Conflict resolution (server wins)
+- [x] Background sync thread
 
-## Fase 6: UI Integratie (NOG TE DOEN)
-- [ ] Sync knop in UI
-- [ ] Sync status indicator
+### C++ Source
+```
+src/libslic3r/SyncManager.hpp  - Sync orchestrator
+src/libslic3r/SyncManager.cpp  - Implementation
+```
+
+## Fase 6: UI Integratie (PENDING - vereist wxWidgets integratie)
+- [ ] Sync knop in UI (MainFrame/Tab)
+- [ ] Sync status indicator  
 - [ ] Conflict resolution dialog
+
+**Note:** UI integratie vereist wijzigingen aan MainFrame/Tab pagina's en is complexer. 
+De backend logica (SyncManager) is klaar voor gebruik.
 
 ## Fase 7: Testing & Polish (NOG TE DOEN)
 - [ ] Unit tests
