@@ -6,23 +6,23 @@
 - [x] Vendors seeden
 - [x] 1787 filament presets ingeladen
 
-## Fase 2: .NET Web API (NOG TE DOEN)
-- [ ] Project aanmaken (`src/dotnet/OrcaConfigApi/`)
-- [ ] Entity Framework Core setup
-- [ ] Auth endpoints
-  - [ ] POST /api/auth/login
-  - [ ] POST /api/auth/refresh
-  - [ ] GET /api/auth/me
-- [ ] Preset CRUD endpoints
-  - [ ] GET /api/presets?type=filament
-  - [ ] GET /api/presets/{id}
-  - [ ] POST /api/presets
-  - [ ] PUT /api/presets/{id}
-  - [ ] DELETE /api/presets/{id}
-- [ ] Sync endpoints
-  - [ ] GET /api/sync/pull?cursor=X
-  - [ ] POST /api/sync/push
-  - [ ] GET /api/sync/state
+## Fase 2: .NET Web API (IN UITVOERING)
+- [x] Project aanmaken (`src/dotnet/OrcaConfigApi/`)
+- [x] Entity Framework Core setup
+- [x] Auth endpoints
+  - [x] POST /api/auth/login
+  - [x] POST /api/auth/refresh
+  - [x] GET /api/auth/me
+- [x] Preset CRUD endpoints
+  - [x] GET /api/presets?type=filament
+  - [x] GET /api/presets/{id}
+  - [x] POST /api/presets
+  - [x] PUT /api/presets/{id}
+  - [x] DELETE /api/presets/{id}
+- [x] Sync endpoints
+  - [x] GET /api/sync/pull?cursor=X
+  - [x] POST /api/sync/push
+  - [x] GET /api/sync/state
 
 ## Fase 3: C++ ConfigDatabase (NOG TE DOEN)
 - [ ] ConfigDatabase.hpp - Interface
@@ -102,3 +102,52 @@ Authorization: Bearer <token>
 ---
 
 *Laatst bijgewerkt: 2026-04-24*
+
+---
+
+## Project Files (Phase 2)
+
+### Aangemaakt
+```
+src/dotnet/
+├── OrcaSlicer.sln
+└── OrcaConfigApi/
+    ├── OrcaConfigApi.csproj
+    ├── Program.cs
+    ├── appsettings.json
+    ├── Configuration/
+    │   └── JwtSettings.cs
+    ├── Controllers/
+    │   ├── AuthController.cs
+    │   ├── PresetsController.cs
+    │   └── SyncController.cs
+    ├── Data/
+    │   └── OrcaDbContext.cs
+    ├── DTOs/
+    │   ├── AuthDTOs.cs
+    │   ├── PresetDTOs.cs
+    │   └── SyncDTOs.cs
+    ├── Models/
+    │   ├── Preset.cs
+    │   ├── User.cs
+    │   ├── Vendor.cs
+    │   ├── PhysicalPrinter.cs
+    │   ├── UserSelection.cs
+    │   └── SyncState.cs
+    ├── Services/
+    │   ├── AuthService.cs
+    │   ├── PresetService.cs
+    │   └── SyncService.cs
+    └── Properties/
+        └── launchSettings.json
+```
+
+### Starten van de API
+```bash
+cd src/dotnet/OrcaConfigApi
+dotnet run
+```
+
+### Default credentials
+- Username: `admin`
+- Password: `admin`
