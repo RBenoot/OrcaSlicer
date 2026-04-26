@@ -8,6 +8,8 @@
 
 #include <wx/control.h>
 
+class SyncStatusPanel;
+
 using namespace Slic3r::GUI;
 
 class CenteredTitle : public wxControl
@@ -74,6 +76,8 @@ public:
 
     void ShowCalibrationButton(bool show = true);
 
+    SyncStatusPanel* get_sync_status_panel() { return m_sync_status_panel; }
+
 protected:
 #ifdef __WXMSW__
     WXLRESULT MSWWindowProc(WXUINT nMsg, WXWPARAM wParam, WXLPARAM lParam) override;
@@ -112,4 +116,5 @@ private:
     bool m_skip_popup_file_menu;
     bool m_skip_popup_dropdown_menu;
     bool m_skip_popup_calib_menu;
+    SyncStatusPanel* m_sync_status_panel { nullptr };
 };
