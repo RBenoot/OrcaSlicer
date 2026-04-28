@@ -1,4 +1,5 @@
 #include "SyncStatusPanel.hpp"
+#include "SyncManager.hpp"
 #include "GUI_App.hpp"
 #include "Widgets/Button.hpp"
 #include "Widgets/Label.hpp"
@@ -8,7 +9,7 @@ namespace Slic3r {
 namespace GUI {
 
 SyncStatusPanel::SyncStatusPanel(wxWindow* parent, wxWindowID id)
-    : wxPanel(parent, id)
+    : wxControl(parent, id)
     , m_state(STATE_OFFLINE)
     , m_pending_count(0)
     , m_refresh_timer(this)

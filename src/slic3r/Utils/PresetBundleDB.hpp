@@ -1,7 +1,7 @@
 #ifndef slic3r_PresetBundleDB_hpp_
 #define slic3r_PresetBundleDB_hpp_
 
-#include "PresetBundle.hpp"
+#include "libslic3r/PresetBundle.hpp"
 #include "ConfigDatabase.hpp"
 #include <memory>
 

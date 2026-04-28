@@ -1,6 +1,5 @@
 #include "ConfigDatabase.hpp"
 #include "Http.hpp"
-#include "libslic3r/Utils/Http.hpp"
 #include <boost/algorithm/string/replace.hpp>
 #include <boost/log/trivial.hpp>
 
@@ -110,10 +109,9 @@ void ConfigDatabaseRestClient::login(
         {"password", password}
     };
     
-    Http::get(p->make_url("/api/auth/login"))
-        .method(Http::POST)
+    Http::post(p->make_url("/api/auth/login"))
         .header("Content-Type", "application/json")
-        .body(body.dump())
+        .set_post_body(body.dump())
         .on_complete([this, callback](std::string body, unsigned status) {
             if (status == 200) {
                 try {
@@ -131,7 +129,7 @@ void ConfigDatabaseRestClient::login(
                 callback(false, "Login failed with status " + std::to_string(status));
             }
         })
-        .on_error([callback](std::string error) {
+        .on_error([callback](std::string body, std::string error, unsigned status) {
             callback(false, "Request error: " + error);
         })
         .perform();
@@ -160,7 +158,7 @@ void ConfigDatabaseRestClient::fetch_presets(
                 callback(false, {}, "Request failed with status " + std::to_string(status));
             }
         })
-        .on_error([callback](std::string error) {
+        .on_error([callback](std::string body, std::string error, unsigned status) {
             callback(false, {}, "Request error: " + error);
         })
         .perform();
@@ -188,7 +186,7 @@ void ConfigDatabaseRestClient::fetch_preset(
                 callback(false, nullptr, "Request failed with status " + std::to_string(status));
             }
         })
-        .on_error([callback](std::string error) {
+        .on_error([callback](std::string body, std::string error, unsigned status) {
             callback(false, nullptr, "Request error: " + error);
         })
         .perform();
@@ -200,7 +198,7 @@ void ConfigDatabaseRestClient::create_preset(
 {
     Http::post(p->make_url("/api/presets"))
         .header("Content-Type", "application/json")
-        .body(p->preset_to_json(preset).dump())
+        .set_post_body(p->preset_to_json(preset).dump())
         .on_complete([this, callback](std::string body, unsigned status) {
             if (status == 201) {
                 try {
@@ -214,7 +212,7 @@ void ConfigDatabaseRestClient::create_preset(
                 callback(false, nullptr, "Create failed with status " + std::to_string(status));
             }
         })
-        .on_error([callback](std::string error) {
+        .on_error([callback](std::string body, std::string error, unsigned status) {
             callback(false, nullptr, "Request error: " + error);
         })
         .perform();
@@ -227,7 +225,7 @@ void ConfigDatabaseRestClient::update_preset(
 {
     Http::put(p->make_url("/api/presets/" + id))
         .header("Content-Type", "application/json")
-        .body(p->preset_to_json(preset).dump())
+        .set_post_body(p->preset_to_json(preset).dump())
         .on_complete([this, callback](std::string body, unsigned status) {
             if (status == 200) {
                 try {
@@ -243,7 +241,7 @@ void ConfigDatabaseRestClient::update_preset(
                 callback(false, nullptr, "Update failed with status " + std::to_string(status));
             }
         })
-        .on_error([callback](std::string error) {
+        .on_error([callback](std::string body, std::string error, unsigned status) {
             callback(false, nullptr, "Request error: " + error);
         })
         .perform();
@@ -263,7 +261,7 @@ void ConfigDatabaseRestClient::delete_preset(
                 callback(false, "Delete failed with status " + std::to_string(status));
             }
         })
-        .on_error([callback](std::string error) {
+        .on_error([callback](std::string body, std::string error, unsigned status) {
             callback(false, "Request error: " + error);
         })
         .perform();
@@ -303,7 +301,7 @@ void ConfigDatabaseRestClient::sync_pull(
                 callback(false, {}, "Sync pull failed with status " + std::to_string(status));
             }
         })
-        .on_error([callback](std::string error) {
+        .on_error([callback](std::string body, std::string error, unsigned status) {
             callback(false, {}, "Request error: " + error);
         })
         .perform();
@@ -328,7 +326,7 @@ void ConfigDatabaseRestClient::sync_push(
     
     Http::post(p->make_url("/api/sync/push"))
         .header("Content-Type", "application/json")
-        .body(body.dump())
+        .set_post_body(body.dump())
         .on_complete([callback](std::string body, unsigned status) {
             if (status == 200) {
                 try {
@@ -341,7 +339,7 @@ void ConfigDatabaseRestClient::sync_push(
                 callback(false, json::object(), "Sync push failed with status " + std::to_string(status));
             }
         })
-        .on_error([callback](std::string error) {
+        .on_error([callback](std::string body, std::string error, unsigned status) {
             callback(false, json::object(), "Request error: " + error);
         })
         .perform();
@@ -367,7 +365,7 @@ void ConfigDatabaseRestClient::sync_state(
                 callback(false, {}, "Sync state failed with status " + std::to_string(status));
             }
         })
-        .on_error([callback](std::string error) {
+        .on_error([callback](std::string body, std::string error, unsigned status) {
             callback(false, {}, "Request error: " + error);
         })
         .perform();

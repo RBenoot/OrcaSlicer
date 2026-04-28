@@ -1,16 +1,17 @@
 #ifndef _SyncStatusPanel_hpp_
 #define _SyncStatusPanel_hpp_
 
-#include <wx/panel.h>
+#include <wx/control.h>
 #include <wx/timer.h>
 #include <wx/stattext.h>
 #include <wx/button.h>
+#include "Widgets/Button.hpp"
 #include <wx/gdicmn.h>
 
 namespace Slic3r {
 namespace GUI {
 
-class SyncStatusPanel : public wxPanel
+class SyncStatusPanel : public wxControl
 {
 public:
     enum SyncState {
@@ -35,7 +36,7 @@ public:
 
 protected:
     wxStaticText* m_status_text;
-    wxButton* m_sync_button;
+    Button* m_sync_button;
     wxTimer m_refresh_timer;
     SyncState m_state;
     int m_pending_count;

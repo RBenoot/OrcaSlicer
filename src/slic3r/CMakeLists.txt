@@ -440,6 +440,8 @@ set(SLIC3R_GUI_SOURCES
     GUI/SlicingProgressNotification.hpp
     GUI/StatusPanel.cpp
     GUI/StatusPanel.hpp
+    GUI/SyncStatusPanel.cpp
+    GUI/SyncStatusPanel.hpp
     GUI/StepMeshDialog.cpp
     GUI/StepMeshDialog.hpp
     GUI/SurfaceDrag.cpp
@@ -590,6 +592,12 @@ set(SLIC3R_GUI_SOURCES
     Utils/HexFile.hpp
     Utils/Http.cpp
     Utils/Http.hpp
+    Utils/ConfigDatabase.cpp
+    Utils/ConfigDatabase.hpp
+    Utils/PresetBundleDB.cpp
+    Utils/PresetBundleDB.hpp
+    Utils/SyncManager.cpp
+    Utils/SyncManager.hpp
     Utils/InstanceID.cpp
     Utils/InstanceID.hpp
     Utils/json_diff.cpp

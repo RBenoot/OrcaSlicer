@@ -8,7 +8,9 @@
 
 #include <wx/control.h>
 
-class SyncStatusPanel;
+namespace Slic3r { namespace GUI {
+    class SyncStatusPanel;
+} }
 
 using namespace Slic3r::GUI;
 

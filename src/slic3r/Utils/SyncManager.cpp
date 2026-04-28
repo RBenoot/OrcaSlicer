@@ -1,5 +1,5 @@
 #include "SyncManager.hpp"
-#include "PresetBundle.hpp"
+#include "libslic3r/PresetBundle.hpp"
 #include "ConfigDatabase.hpp"
 #include <boost/log/trivial.hpp>
 #include <boost/core/null_deleter.hpp>
@@ -10,7 +10,7 @@ namespace Slic3r {
 
 std::shared_ptr<SyncManager> SyncManager::instance()
 {
-    static std::shared_ptr<SyncManager> inst = std::make_shared<SyncManager>();
+    static std::shared_ptr<SyncManager> inst(new SyncManager(), [](SyncManager* p) { delete p; });
     return inst;
 }
 
@@ -127,7 +127,7 @@ void SyncManager::push_to_server()
     
     if (!m_db) return;
     
-    m_db->sync_push(changes, [](bool success, const json& result, const std::string& error) {
+    m_db->sync_push(changes, [changes](bool success, const json& result, const std::string& error) {
         if (!success) {
             BOOST_LOG_TRIVIAL(error) << "Push failed: " << error;
         } else {
@@ -146,10 +146,11 @@ void SyncManager::pull_from_server()
         return;
     }
     
-    std::string cursor;
+    auto cursor_ptr = std::make_shared<std::string>("");
+    auto fetch_next = std::make_shared<std::function<void()>>();
     
-    std::function<void()> fetch_next = [this, &fetch_next, cursor]() mutable {
-        m_db->sync_pull(cursor, 100, [this, &fetch_next](bool success, const SyncPullResult& result, const std::string& error) {
+    *fetch_next = [this, fetch_next, cursor_ptr]() {
+        m_db->sync_pull(*cursor_ptr, 100, [this, fetch_next, cursor_ptr](bool success, const SyncPullResult& result, const std::string& error) {
             if (!success) {
                 m_status = SyncStatus::Error;
                 m_last_error = error;
@@ -165,9 +166,9 @@ void SyncManager::pull_from_server()
                 }
             }
             
-            cursor = result.next_cursor;
-            if (!cursor.empty()) {
-                fetch_next();
+            *cursor_ptr = result.next_cursor;
+            if (!cursor_ptr->empty()) {
+                (*fetch_next)();
             } else {
                 m_status = SyncStatus::Idle;
                 if (m_sync_callback) {
@@ -178,7 +179,7 @@ void SyncManager::pull_from_server()
         });
     };
     
-    fetch_next();
+    (*fetch_next)();
 }
 
 void SyncManager::resolve_conflict(const std::string& preset_id, bool use_server)

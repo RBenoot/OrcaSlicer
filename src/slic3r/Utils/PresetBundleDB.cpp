@@ -1,13 +1,13 @@
 #include "PresetBundleDB.hpp"
-#include "PresetBundle.hpp"
-#include "PrintConfig.hpp"
+#include "libslic3r/PresetBundle.hpp"
+#include "libslic3r/PrintConfig.hpp"
 #include <boost/log/trivial.hpp>
 
 namespace Slic3r {
 
 std::shared_ptr<PresetBundleDB> PresetBundleDB::instance()
 {
-    static std::shared_ptr<PresetBundleDB> inst = std::make_shared<PresetBundleDB>();
+    static std::shared_ptr<PresetBundleDB> inst(new PresetBundleDB());
     return inst;
 }
 
@@ -37,7 +37,6 @@ void PresetBundleDB::apply_preset_record(Preset& preset, const PresetRecord& rec
 {
     preset.name = record.name;
     preset.is_system = record.is_system;
-    preset.is_template = record.is_template;
     
     if (!record.setting_id.empty()) {
         preset.setting_id = record.setting_id;
@@ -63,7 +62,7 @@ void PresetBundleDB::apply_preset_record(Preset& preset, const PresetRecord& rec
             
             const auto& value = it.value();
             if (value.is_number_integer()) {
-                preset.config.set(key, new ConfigOptionInt(value.get<int64_t>()));
+                preset.config.set(key, new ConfigOptionInt(static_cast<int>(value.get<int64_t>())));
             } else if (value.is_number_float()) {
                 preset.config.set(key, new ConfigOptionFloat(value.get<double>()));
             } else if (value.is_string()) {
@@ -82,7 +81,6 @@ PresetRecord PresetBundleDB::preset_to_record(const Preset& preset, const std::s
     record.type = type;
     record.name = preset.name;
     record.is_system = preset.is_system;
-    record.is_template = preset.is_template;
     record.setting_id = preset.setting_id;
     record.updated_time = 0;
     
@@ -95,16 +93,14 @@ PresetRecord PresetBundleDB::preset_to_record(const Preset& preset, const std::s
         auto* opt = preset.config.option(key);
         if (!opt) continue;
         
-        if (opt->is_compatible_type(presets::PrintOptionType)) {
-            if (auto* s = dynamic_cast<ConfigOptionString*>(opt)) {
-                if (!s->value.empty()) config[key] = s->value;
-            } else if (auto* i = dynamic_cast<ConfigOptionInt*>(opt)) {
-                config[key] = i->value;
-            } else if (auto* f = dynamic_cast<ConfigOptionFloat*>(opt)) {
-                config[key] = f->value;
-            } else if (auto* b = dynamic_cast<ConfigOptionBool*>(opt)) {
-                config[key] = b->value;
-            }
+        if (auto* s = dynamic_cast<const ConfigOptionString*>(opt)) {
+            if (!s->value.empty()) config[key] = s->value;
+        } else if (auto* i = dynamic_cast<const ConfigOptionInt*>(opt)) {
+            config[key] = i->value;
+        } else if (auto* f = dynamic_cast<const ConfigOptionFloat*>(opt)) {
+            config[key] = f->value;
+        } else if (auto* b = dynamic_cast<const ConfigOptionBool*>(opt)) {
+            config[key] = b->value;
         }
     }
     record.config = config;
@@ -145,7 +141,6 @@ void PresetBundleDB::load_presets_from_db(
         for (const auto& record : presets) {
             Preset new_preset(Preset::TYPE_INVALID, record.name, record.is_system);
             new_preset.setting_id = record.setting_id;
-            new_preset.config = DynamicPrintConfig::defaults();
             
             apply_preset_record(new_preset, record);
             
@@ -173,7 +168,7 @@ void PresetBundleDB::save_preset_to_db(
     PresetRecord record = preset_to_record(preset, type);
     
     if (preset.setting_id.empty()) {
-        m_db->create_preset(record, [callback](bool success, const PresetRecord* result, const std::string& error) {
+        m_db->create_preset(record, [&preset, callback](bool success, const PresetRecord* result, const std::string& error) {
             if (success && result) {
                 preset.setting_id = result->setting_id;
             }
@@ -207,11 +202,12 @@ void PresetBundleDB::sync_from_db(
         return;
     }
     
-    std::string cursor;
-    bool first_batch = true;
+    auto cursor_ptr = std::make_shared<std::string>("");
+    auto first_batch_ptr = std::make_shared<bool>(true);
+    auto fetch_next_batch = std::make_shared<std::function<void()>>();
     
-    std::function<void()> fetch_next_batch = [this, bundle, callback, &cursor, &first_batch, &fetch_next_batch]() {
-        m_db->sync_pull(cursor, 100, [this, bundle, callback, &cursor, &first_batch, &fetch_next_batch](
+    *fetch_next_batch = [this, bundle, callback, cursor_ptr, first_batch_ptr, fetch_next_batch]() {
+        m_db->sync_pull(*cursor_ptr, 100, [this, bundle, callback, cursor_ptr, first_batch_ptr, fetch_next_batch](
             bool success, const SyncPullResult& result, const std::string& error) {
             
             if (!success) {
@@ -230,15 +226,14 @@ void PresetBundleDB::sync_from_db(
                 if (collection) {
                     Preset new_preset(Preset::TYPE_INVALID, record.name, record.is_system);
                     new_preset.setting_id = record.setting_id;
-                    new_preset.config = DynamicPrintConfig::defaults();
                     apply_preset_record(new_preset, record);
                     collection->load_preset("", record.name, std::move(new_preset.config), false);
                 }
             }
             
-            cursor = result.next_cursor;
-            if (!cursor.empty()) {
-                fetch_next_batch();
+            *cursor_ptr = result.next_cursor;
+            if (!cursor_ptr->empty()) {
+                (*fetch_next_batch)();
             } else {
                 BOOST_LOG_TRIVIAL(info) << "Sync from DB completed";
                 callback(true, "");
@@ -246,7 +241,7 @@ void PresetBundleDB::sync_from_db(
         });
     };
     
-    fetch_next_batch();
+    (*fetch_next_batch)();
 }
 
 void PresetBundleDB::sync_to_db(
@@ -277,7 +272,7 @@ void PresetBundleDB::sync_to_db(
         return;
     }
     
-    m_db->sync_push(changes, [callback](bool success, const json& result, const std::string& error) {
+    m_db->sync_push(changes, [changes, callback](bool success, const json& result, const std::string& error) {
         if (success) {
             BOOST_LOG_TRIVIAL(info) << "Synced " << changes.size() << " presets to database";
         }
