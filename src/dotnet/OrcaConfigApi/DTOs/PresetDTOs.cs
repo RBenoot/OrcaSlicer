@@ -18,8 +18,8 @@ public record PresetDto(
     string SyncStatus,
     long UpdatedTime,
     string? UserId,
-    DateTime CreatedAt,
-    DateTime UpdatedAt
+    long CreatedAt,
+    long UpdatedAt
 );
 
 public record PresetCreateRequest(

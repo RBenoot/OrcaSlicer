@@ -18,6 +18,7 @@
 #include "Tab.hpp"
 
 #include "Widgets/DialogButtons.hpp"
+#include "../Utils/SyncManager.hpp"
 
 using Slic3r::GUI::format_wxstr;
 
@@ -440,15 +441,28 @@ void SavePresetDialog::update_physical_printers(const std::string &preset_name)
 
     std::string printer_preset_name = physical_printers.get_selected_printer_preset_name();
 
-    if (m_action == Switch)
+    if (m_action == Switch) {
         // unselect physical printer, if it was selected
         physical_printers.unselect_printer();
+    }
     else {
         PhysicalPrinter printer = physical_printers.get_selected_printer();
 
-        if (m_action == ChangePreset) printer.delete_preset(printer_preset_name);
+        if (m_action == ChangePreset) {
+            printer.delete_preset(printer_preset_name);
+            auto sync_mgr = SyncManager::instance();
+            if (sync_mgr && !printer.setting_id.empty()) {
+                sync_mgr->queue_change(printer.setting_id, printer.name, "physical_printer", "delete");
+            }
+        }
 
-        if (printer.add_preset(preset_name)) physical_printers.save_printer(printer);
+        if (printer.add_preset(preset_name)) {
+            physical_printers.save_printer(printer);
+            auto sync_mgr = SyncManager::instance();
+            if (sync_mgr) {
+                sync_mgr->queue_change(printer.setting_id, printer.name, "physical_printer", printer.sync_info);
+            }
+        }
 
         physical_printers.select_printer(printer.get_full_name(preset_name));
     }

@@ -88,7 +88,7 @@ public class AuthService : IAuthService
         return new LoginResponse(
             new JwtSecurityTokenHandler().WriteToken(token),
             refreshToken,
-            expiresAt
+            ((DateTimeOffset)expiresAt).ToUnixTimeMilliseconds()
         );
     }
 }

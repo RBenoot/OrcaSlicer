@@ -922,6 +922,14 @@ public:
     // Has this profile been loaded?
     bool                loaded = false;
 
+    // Sync metadata
+    std::string         setting_id;
+    std::string         sync_info;
+    long long           updated_time = 0;
+    
+    void                save_info(std::string file_path = "");
+    void                load_info();
+
     static std::string  separator();
     static const std::vector<std::string>&  printer_options();
     static const std::vector<std::string>&  print_host_options();

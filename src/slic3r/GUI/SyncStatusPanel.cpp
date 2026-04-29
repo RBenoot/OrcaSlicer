@@ -29,11 +29,18 @@ SyncStatusPanel::SyncStatusPanel(wxWindow* parent, wxWindowID id)
     sizer->Add(m_sync_button, 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, 10);
     
     SetSizer(sizer);
-    SetSize(wxSize(200, 36));
+    SetMinSize(wxSize(200, 36));
+    
+    Bind(wxEVT_SIZE, [this](wxSizeEvent& e) {
+        Layout();
+        e.Skip();
+    });
     
     m_sync_button->Bind(wxEVT_BUTTON, &SyncStatusPanel::on_sync_click, this);
     m_refresh_timer.Start(5000);
     Bind(wxEVT_TIMER, &SyncStatusPanel::on_timer, this);
+    
+    update_ui();
 }
 
 SyncStatusPanel::~SyncStatusPanel()
@@ -88,7 +95,8 @@ void SyncStatusPanel::update_ui()
     switch (m_state) {
         case STATE_OFFLINE:
             m_status_text->SetLabel(_("Offline"));
-            m_sync_button->Enable(false);
+            m_sync_button->Enable(true);
+            m_sync_button->SetLabel(_("Connect"));
             break;
         case STATE_IDLE:
             if (m_pending_count > 0) {
@@ -129,7 +137,16 @@ void SyncStatusPanel::on_sync_click(wxCommandEvent& event)
     
     auto sync_mgr = SyncManager::instance();
     if (sync_mgr) {
-        sync_mgr->sync_async();
+        if (!sync_mgr->is_online()) {
+            // Zorg dat de database geconfigureerd is
+            auto db = ConfigDatabase::instance();
+            sync_mgr->set_config_database(db);
+            
+            // Log in met de hardcoded admin credentials uit de backend
+            sync_mgr->login_and_sync("admin", "admin", [](bool success, const std::string& err) {});
+        } else {
+            sync_mgr->sync_async();
+        }
     }
 }
 

@@ -81,7 +81,7 @@ def main():
     while resources_dir and not os.path.exists(os.path.join(resources_dir, 'resources', 'profiles')):
         parent = os.path.dirname(resources_dir)
         if parent == resources_dir:
-            resources_dir = r"C:\Users\Robin\Documents\OrcaSlicer"
+            resources_dir = r"C:\Users\Robin\Documents\OrcaSlicer\resources"
             break
         resources_dir = parent
 
@@ -94,7 +94,7 @@ def main():
     print("="*60)
     subprocess.run('docker exec orca-postgres psql -U postgres -d orca_config -c "SELECT COUNT(*) AS total_presets FROM presets;"')
 
-    print("\n✓ Setup complete!")
+    print("\n Setup complete!")
     print("\nNext steps:")
     print("1. Start Docker Desktop if not running")
     print("2. Run: docker start orca-postgres")

@@ -22,22 +22,26 @@ struct ConfigDatabaseRestClient::Priv {
     
     PresetRecord parse_preset(const json& j) {
         PresetRecord p;
-        p.id = j.value("id", "");
-        p.vendor_id = j.value("vendorId", "");
-        p.vendor_name = j.value("vendorName", "");
-        p.type = j.value("type", "");
-        p.name = j.value("name", "");
-        p.inherits = j.value("inherits", "");
-        p.is_system = j.value("isSystem", false);
-        p.is_template = j.value("isTemplate", false);
-        p.filament_id = j.value("filamentId", "");
-        p.setting_id = j.value("settingId", "");
-        p.base_id = j.value("baseId", "");
-        p.sync_status = j.value("syncStatus", "");
-        p.updated_time = j.value("updatedTime", 0);
-        p.user_id = j.value("userId", "");
-        p.created_at = j.value("createdAt", 0);
-        p.updated_at = j.value("updatedAt", 0);
+        auto get_str = [&j](const std::string& key) { return (j.contains(key) && !j[key].is_null()) ? j[key].get<std::string>() : ""; };
+        auto get_bool = [&j](const std::string& key) { return (j.contains(key) && !j[key].is_null()) ? j[key].get<bool>() : false; };
+        auto get_int = [&j](const std::string& key) { return (j.contains(key) && !j[key].is_null()) ? j[key].get<int64_t>() : 0; };
+        
+        p.id = get_str("id");
+        p.vendor_id = get_str("vendorId");
+        p.vendor_name = get_str("vendorName");
+        p.type = get_str("type");
+        p.name = get_str("name");
+        p.inherits = get_str("inherits");
+        p.is_system = get_bool("isSystem");
+        p.is_template = get_bool("isTemplate");
+        p.filament_id = get_str("filamentId");
+        p.setting_id = get_str("settingId");
+        p.base_id = get_str("baseId");
+        p.sync_status = get_str("syncStatus");
+        p.updated_time = get_int("updatedTime");
+        p.user_id = get_str("userId");
+        p.created_at = get_int("createdAt");
+        p.updated_at = get_int("updatedAt");
         
         if (j.contains("config") && !j["config"].is_null()) {
             p.config = j["config"];
@@ -51,13 +55,13 @@ struct ConfigDatabaseRestClient::Priv {
         return {
             {"type", p.type},
             {"name", p.name},
-            {"inherits", p.inherits.empty() ? nullptr : p.inherits},
+            {"inherits", p.inherits.empty() ? json(nullptr) : json(p.inherits)},
             {"config", p.config},
             {"isSystem", p.is_system},
             {"isTemplate", p.is_template},
-            {"filamentId", p.filament_id.empty() ? nullptr : p.filament_id},
-            {"settingId", p.setting_id.empty() ? nullptr : p.setting_id},
-            {"baseId", p.base_id.empty() ? nullptr : p.base_id}
+            {"filamentId", p.filament_id.empty() ? json(nullptr) : json(p.filament_id)},
+            {"settingId", p.setting_id.empty() ? json(nullptr) : json(p.setting_id)},
+            {"baseId", p.base_id.empty() ? json(nullptr) : json(p.base_id)}
         };
     }
 };
@@ -117,9 +121,9 @@ void ConfigDatabaseRestClient::login(
                 try {
                     auto j = json::parse(body);
                     AuthTokens tokens;
-                    tokens.token = j.value("token", "");
-                    tokens.refresh_token = j.value("refreshToken", "");
-                    tokens.expires_at = j.value("expiresAt", 0);
+                    tokens.token = (j.contains("token") && !j["token"].is_null()) ? j["token"].get<std::string>() : "";
+                    tokens.refresh_token = (j.contains("refreshToken") && !j["refreshToken"].is_null()) ? j["refreshToken"].get<std::string>() : "";
+                    tokens.expires_at = (j.contains("expiresAt") && !j["expiresAt"].is_null()) ? j["expiresAt"].get<int64_t>() : 0;
                     set_auth_tokens(tokens);
                     callback(true, "");
                 } catch (const std::exception& e) {
@@ -141,8 +145,9 @@ void ConfigDatabaseRestClient::fetch_presets(
 {
     std::string url = p->make_url("/api/presets?type=" + type);
     
-    Http::get(url)
-        .on_complete([this, callback](std::string body, unsigned status) {
+    auto http = Http::get(url);
+    p->add_auth_header(http);
+    http.on_complete([this, callback](std::string body, unsigned status) {
             if (status == 200) {
                 try {
                     auto j = json::parse(body);
@@ -170,8 +175,9 @@ void ConfigDatabaseRestClient::fetch_preset(
 {
     std::string url = p->make_url("/api/presets/" + id);
     
-    Http::get(url)
-        .on_complete([this, callback, id](std::string body, unsigned status) {
+    auto http = Http::get(url);
+    p->add_auth_header(http);
+    http.on_complete([this, callback, id](std::string body, unsigned status) {
             if (status == 200) {
                 try {
                     auto j = json::parse(body);
@@ -196,8 +202,9 @@ void ConfigDatabaseRestClient::create_preset(
     const PresetRecord& preset,
     std::function<void(bool success, const PresetRecord* result, const std::string& error)> callback)
 {
-    Http::post(p->make_url("/api/presets"))
-        .header("Content-Type", "application/json")
+    auto http = Http::post(p->make_url("/api/presets"));
+    p->add_auth_header(http);
+    http.header("Content-Type", "application/json")
         .set_post_body(p->preset_to_json(preset).dump())
         .on_complete([this, callback](std::string body, unsigned status) {
             if (status == 201) {
@@ -223,8 +230,9 @@ void ConfigDatabaseRestClient::update_preset(
     const PresetRecord& preset,
     std::function<void(bool success, const PresetRecord* result, const std::string& error)> callback)
 {
-    Http::put(p->make_url("/api/presets/" + id))
-        .header("Content-Type", "application/json")
+    auto http = Http::put(p->make_url("/api/presets/" + id));
+    p->add_auth_header(http);
+    http.header("Content-Type", "application/json")
         .set_post_body(p->preset_to_json(preset).dump())
         .on_complete([this, callback](std::string body, unsigned status) {
             if (status == 200) {
@@ -251,8 +259,9 @@ void ConfigDatabaseRestClient::delete_preset(
     const std::string& id,
     std::function<void(bool success, const std::string& error)> callback)
 {
-    Http::del(p->make_url("/api/presets/" + id))
-        .on_complete([callback](std::string body, unsigned status) {
+    auto http = Http::del(p->make_url("/api/presets/" + id));
+    p->add_auth_header(http);
+    http.on_complete([callback](std::string body, unsigned status) {
             if (status == 204 || status == 200) {
                 callback(true, "");
             } else if (status == 404) {
@@ -277,13 +286,18 @@ void ConfigDatabaseRestClient::sync_pull(
         url += "&cursor=" + cursor;
     }
     
-    Http::get(url)
-        .on_complete([this, callback](std::string body, unsigned status) {
+    auto http = Http::get(url);
+    p->add_auth_header(http);
+    http.on_complete([this, callback](std::string body, unsigned status) {
             if (status == 200) {
                 try {
                     auto j = json::parse(body);
                     SyncPullResult result;
-                    result.next_cursor = j.value("nextCursor", "");
+                    if (j.contains("nextCursor") && !j["nextCursor"].is_null()) {
+                        result.next_cursor = j["nextCursor"].get<std::string>();
+                    } else {
+                        result.next_cursor = "";
+                    }
                     
                     for (const auto& item : j["upserts"]) {
                         result.upserts.push_back(p->parse_preset(item));
@@ -311,11 +325,12 @@ void ConfigDatabaseRestClient::sync_push(
     const std::vector<SyncPushChange>& changes,
     std::function<void(bool success, const json& result, const std::string& error)> callback)
 {
-    json body = json::array();
+    json body = json::object();
+    json changes_array = json::array();
     for (const auto& change : changes) {
-        body.push_back({
-            {"id", change.id.empty() ? nullptr : change.id},
-            {"settingId", change.setting_id.empty() ? nullptr : change.setting_id},
+        changes_array.push_back({
+            {"id", change.id.empty() ? json(nullptr) : json(change.id)},
+            {"settingId", change.setting_id.empty() ? json(nullptr) : json(change.setting_id)},
             {"name", change.name},
             {"type", change.type},
             {"content", change.content},
@@ -323,9 +338,11 @@ void ConfigDatabaseRestClient::sync_push(
             {"updatedAt", change.updated_at}
         });
     }
+    body["changes"] = changes_array;
     
-    Http::post(p->make_url("/api/sync/push"))
-        .header("Content-Type", "application/json")
+    auto http = Http::post(p->make_url("/api/sync/push"));
+    p->add_auth_header(http);
+    http.header("Content-Type", "application/json")
         .set_post_body(body.dump())
         .on_complete([callback](std::string body, unsigned status) {
             if (status == 200) {
@@ -348,8 +365,9 @@ void ConfigDatabaseRestClient::sync_push(
 void ConfigDatabaseRestClient::sync_state(
     std::function<void(bool success, const SyncState& state, const std::string& error)> callback)
 {
-    Http::get(p->make_url("/api/sync/state"))
-        .on_complete([callback](std::string body, unsigned status) {
+    auto http = Http::get(p->make_url("/api/sync/state"));
+    p->add_auth_header(http);
+    http.on_complete([callback](std::string body, unsigned status) {
             if (status == 200) {
                 try {
                     auto j = json::parse(body);

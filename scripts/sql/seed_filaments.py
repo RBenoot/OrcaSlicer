@@ -26,6 +26,9 @@ def compute_updated_time():
 
 def get_vendor_id(conn, vendor_name):
     cur = conn.cursor()
+    cur.execute("INSERT INTO vendors (name, display_name, is_system) VALUES (%s, %s, true) ON CONFLICT (name) DO NOTHING RETURNING id", (vendor_name, vendor_name))
+    result = cur.fetchone()
+    if result: return result[0]
     cur.execute("SELECT id FROM vendors WHERE name = %s", (vendor_name,))
     result = cur.fetchone()
     return result[0] if result else None

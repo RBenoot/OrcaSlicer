@@ -26,6 +26,7 @@ public class OrcaDbContext : DbContext
         {
             entity.HasKey(e => e.Id);
             entity.HasIndex(e => new { e.VendorId, e.Type, e.Name }).IsUnique();
+            entity.Property(e => e.Config).HasColumnType("jsonb");
             entity.HasIndex(e => e.Type);
             entity.HasIndex(e => e.SettingId);
             entity.HasIndex(e => e.FilamentId);

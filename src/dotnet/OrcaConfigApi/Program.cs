@@ -12,7 +12,7 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
     ?? "Host=localhost;Port=5432;Database=orca_config;Username=postgres;Password=orca_secret";
 
 builder.Services.AddDbContext<OrcaDbContext>(options =>
-    options.UseNpgsql(connectionString));
+    options.UseNpgsql(connectionString).UseSnakeCaseNamingConvention());
 
 var jwtSettings = new JwtSettings
 {

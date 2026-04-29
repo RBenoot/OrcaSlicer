@@ -41,6 +41,8 @@
 #include <boost/property_tree/ptree.hpp>
 #include <boost/locale.hpp>
 #include <boost/log/trivial.hpp>
+#include <boost/uuid/uuid_generators.hpp>
+#include <boost/uuid/uuid_io.hpp>
 
 #include "libslic3r.h"
 #include "Utils.hpp"
@@ -3589,6 +3591,59 @@ std::string PhysicalPrinter::get_preset_name(std::string name)
     return Preset::remove_suffix_modified(name);
 }
 
+void PhysicalPrinter::load_info()
+{
+    if (this->file.empty()) return;
+    
+    fs::path idx_path(this->file);
+    idx_path.replace_extension(".info");
+    if (!fs::exists(idx_path)) return;
+    
+    try {
+        std::ifstream ifs(idx_path.string());
+        std::string line;
+        while (std::getline(ifs, line)) {
+            size_t pos = line.find("=");
+            if (pos == std::string::npos) continue;
+            
+            std::string key = line.substr(0, pos);
+            std::string val = line.substr(pos + 1);
+            boost::trim(key);
+            boost::trim(val);
+            
+            if (key == "setting_id") {
+                this->setting_id = val;
+                if (this->setting_id == "null") this->setting_id.clear();
+            } else if (key == "sync_info") {
+                this->sync_info = val;
+                if (this->sync_info == "null") this->sync_info.clear();
+            } else if (key == "updated_time") {
+                this->updated_time = std::atoll(val.c_str());
+            }
+        }
+    } catch (...) {
+        return;
+    }
+}
+
+void PhysicalPrinter::save_info(std::string file_path)
+{
+    if (file_path.empty()) {
+        fs::path idx_file(this->file);
+        idx_file.replace_extension(".info");
+        file_path = idx_file.string();
+    }
+    
+    boost::nowide::ofstream c;
+    c.open(file_path, std::ios::out | std::ios::trunc);
+    std::string sync_info_to_save = this->sync_info;
+    if (sync_info_to_save == "hold") sync_info_to_save.clear();
+    
+    c << "sync_info = " << sync_info_to_save << std::endl;
+    c << "setting_id = " << this->setting_id << std::endl;
+    c << "updated_time = " << std::to_string(this->updated_time) << std::endl;
+    c.close();
+}
 
 // -----------------------------------
 // ***  PhysicalPrinterCollection  ***
@@ -3648,6 +3703,7 @@ void PhysicalPrinterCollection::load_printers(
                         substitutions.push_back({ name, Preset::TYPE_PHYSICAL_PRINTER, PresetConfigSubstitutions::Source::UserFile, printer.file, std::move(config_substitutions) });
                     printer.update_from_config(config);
                     printer.loaded = true;
+                    printer.load_info();
                 }
                 catch (const std::ifstream::failure& err) {
                     throw Slic3r::RuntimeError(std::string("The selected preset cannot be loaded: ") + printer.file + "\n\tReason: " + err.what());
@@ -3809,11 +3865,21 @@ void PhysicalPrinterCollection::save_printer(PhysicalPrinter& edited_printer, co
     if (printer.file.empty())
         printer.file = this->path_from_name(printer.name);
 
+    if (printer.setting_id.empty()) {
+        printer.setting_id = boost::uuids::to_string(boost::uuids::random_generator()());
+        printer.sync_info = "create";
+    } else {
+        printer.sync_info = "update";
+    }
+    printer.updated_time = (long long)Slic3r::Utils::get_current_time_utc();
+
     if (printer.file == this->path_from_name(printer.name))
         printer.save(nullptr);
     else
         // if printer was renamed, we should rename a file and than save the config
         printer.save(printer.file, this->path_from_name(printer.name));
+
+    printer.save_info();
 
     // update idx_selected
     m_idx_selected = it - m_printers.begin();
@@ -3826,8 +3892,15 @@ bool PhysicalPrinterCollection::delete_printer(const std::string& name)
         return false;
 
     const PhysicalPrinter& printer = *it;
+    
     // Erase the preset file.
     boost::nowide::remove(printer.file.c_str());
+    fs::path idx_path(printer.file);
+    idx_path.replace_extension(".info");
+    if (fs::exists(idx_path)) {
+        boost::nowide::remove(idx_path.string().c_str());
+    }
+    
     m_printers.erase(it);
     return true;
 }

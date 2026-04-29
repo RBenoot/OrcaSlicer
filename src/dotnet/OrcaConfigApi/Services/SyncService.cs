@@ -31,7 +31,8 @@ public class SyncService : ISyncService
             var cursorParts = cursor.Split(':');
             if (cursorParts.Length == 2 && long.TryParse(cursorParts[1], out var timestamp))
             {
-                query = query.Where(p => p.UpdatedAt.Ticks > timestamp);
+                var cursorDate = new DateTime(timestamp, DateTimeKind.Utc);
+                query = query.Where(p => p.UpdatedAt > cursorDate);
             }
         }
 
@@ -169,8 +170,8 @@ public class SyncService : ISyncService
             preset.SyncStatus,
             preset.UpdatedTime,
             preset.UserId,
-            preset.CreatedAt,
-            preset.UpdatedAt
+            ((DateTimeOffset)preset.CreatedAt).ToUnixTimeMilliseconds(),
+            ((DateTimeOffset)preset.UpdatedAt).ToUnixTimeMilliseconds()
         );
     }
 }

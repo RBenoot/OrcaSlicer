@@ -53,6 +53,7 @@ void SyncManager::login_and_sync(const std::string& username, const std::string&
         
         m_online = true;
         m_last_error.clear();
+        m_status = SyncStatus::Idle;
         sync(callback);
     });
 }
@@ -114,6 +115,28 @@ void SyncManager::push_to_server()
             change.sync_status = item.action;
             change.updated_at = item.timestamp;
             change.content = json::object();
+            
+            if (m_bundle && item.action != "delete") {
+                std::string file_path;
+                if (item.preset_type == "filament") {
+                    if (auto* p = m_bundle->filaments.find_preset(item.preset_name)) file_path = p->file;
+                } else if (item.preset_type == "machine") {
+                    if (auto* p = m_bundle->printers.find_preset(item.preset_name)) file_path = p->file;
+                } else if (item.preset_type == "process") {
+                    if (auto* p = m_bundle->prints.find_preset(item.preset_name)) file_path = p->file;
+                } else if (item.preset_type == "physical_printer") {
+                    if (auto* p = m_bundle->physical_printers.find_printer(item.preset_name)) file_path = p->file;
+                }
+                
+                if (!file_path.empty()) {
+                    try {
+                        std::ifstream ifs(file_path);
+                        change.content = json::parse(ifs);
+                    } catch(...) {
+                        // Keep empty object on failure
+                    }
+                }
+            }
             
             changes.push_back(change);
             m_queue.pop();

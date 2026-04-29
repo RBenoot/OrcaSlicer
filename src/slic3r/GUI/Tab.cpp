@@ -42,6 +42,8 @@
 
 #include "MsgDialog.hpp"
 #include "Notebook.hpp"
+#include "../Utils/SyncManager.hpp"
+#include "../Utils/PresetBundleDB.hpp"
 
 #include "Widgets/Label.hpp"
 #include "Widgets/TabCtrl.hpp"
@@ -6461,6 +6463,18 @@ void Tab::save_preset(std::string name /*= ""*/, bool detach, bool save_to_proje
         BOOST_LOG_TRIVIAL(info) << "sync_preset: create preset = " << new_preset->name;
     }
     new_preset->save_info();
+    
+    // Trigger sync manager to push to server
+    auto sync_mgr = SyncManager::instance();
+    if (sync_mgr && !new_preset->is_system) {
+        sync_mgr->set_preset_bundle(m_preset_bundle);
+        sync_mgr->queue_change(new_preset->setting_id, new_preset->name, 
+                               Preset::get_type_string(m_type), 
+                               new_preset->sync_info);
+        if (sync_mgr->is_online()) {
+            sync_mgr->sync_async();
+        }
+    }
 
     // Mark the print & filament enabled if they are compatible with the currently selected preset.
     // If saving the preset changes compatibility with other presets, keep the now incompatible dependent presets selected, however with a "red flag" icon showing that they are no more compatible.
@@ -6647,6 +6661,17 @@ void Tab::delete_preset()
     // delete selected preset from printers and printer, if it's needed
     if (m_type == Preset::TYPE_PRINTER && !physical_printers.empty())
         physical_printers.delete_preset_from_printers(current_preset.name);
+
+    // Trigger sync manager to push delete to server
+    auto sync_mgr = SyncManager::instance();
+    if (sync_mgr && !current_preset.is_default && !current_preset.is_system) {
+        sync_mgr->queue_change(current_preset.setting_id, current_preset.name, 
+                               Preset::get_type_string(m_type), 
+                               "delete");
+        if (sync_mgr->is_online()) {
+            sync_mgr->sync_async();
+        }
+    }
 
     // Select will handle of the preset dependencies, of saving & closing the depending profiles, and
     // finally of deleting the preset.

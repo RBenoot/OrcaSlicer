@@ -117,8 +117,8 @@ public class PresetService : IPresetService
             preset.SyncStatus,
             preset.UpdatedTime,
             preset.UserId,
-            preset.CreatedAt,
-            preset.UpdatedAt
+            ((DateTimeOffset)preset.CreatedAt).ToUnixTimeMilliseconds(),
+            ((DateTimeOffset)preset.UpdatedAt).ToUnixTimeMilliseconds()
         );
     }
 }
