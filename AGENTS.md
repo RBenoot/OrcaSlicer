@@ -19,5 +19,33 @@ Unit tests rely on Catch2 (`tests/catch2/`). Name specs after the component unde
 ## Commit & Pull Request Guidelines
 The history favors concise, sentence-style subject lines with optional issue references, e.g., `Fix grid lines origin for multiple plates (#10724)`. Squash fixups locally before opening a PR. Complete `.github/pull_request_template.md`, include reproduction steps or screenshots for UI changes, and mention impacted presets or translations. Link issues via `Closes #NNNN` when applicable, and call out dependency bumps or profile migrations for maintainer review.
 
+## Testing with Custom Data Directory
+When testing locally without affecting your regular presets, use the `--datadir` flag to point to a separate folder:
+```batch
+start "" "orca-slicer.exe" --datadir "C:\Mijn_Orca_Dev_Data"
+```
+This allows safe testing with isolated presets and configurations.
+
 ## Security & Configuration Tips
 Follow `SECURITY.md` for vulnerability reporting. Keep API tokens and printer credentials out of tracked configs; use `sandboxes/` for experimental settings. When touching third-party code in `deps_src/`, record the upstream commit or release in your PR description and run the relevant platform build script to confirm integration.
+
+## Local Testing with Custom Data Directory
+When testing locally, you can use a separate data folder for presets to avoid affecting your production configuration. Create a `.bat` file next to `orca-slicer.exe` with:
+
+```bat
+start "" "orca-slicer.exe" --datadir "C:\Mijn_Orca_Dev_Data"
+```
+
+This allows you to:
+- Test preset changes without risking your production data
+- Have multiple test environments with different configurations
+- Easily reset testing environment by clearing the custom data folder
+
+## Lokale Test Setup
+Voor lokaal testen met een aparte presets folder (zonder je productie data te beïnvloeden), kun je een `.bat` bestand maken in de map waar de `.exe` staat:
+
+```bat
+start "" "orca-slicer.exe" --datadir "C:\Mijn_Orca_Dev_Data"
+```
+
+Dit start OrcaSlicer met een alternatieve data directory waar alle presets en instellingen worden opgeslagen.

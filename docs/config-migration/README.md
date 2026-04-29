@@ -418,4 +418,26 @@ GROUP BY v.name ORDER BY COUNT(p.id) DESC;
 
 ---
 
-*Laatst bijgewerkt: 2026-04-24*
+## 13. Lokaal Testen met Alternative Data Directory
+
+Bij lokaal testen is het handig om met een aparte folder te werken waar presets zijn opgeslagen, zodat de ontwikkelomgeving gescheiden blijft van de normale gebruikersdata.
+
+### Windows: Batch bestand aanmaken
+
+Maak een `.bat` bestand aan in de map waar de `.exe` staat (bijv. `build/`):
+
+```batch
+start "" "orca-slicer.exe" --datadir "C:\Mijn_Orca_Dev_Data"
+```
+
+Dit start OrcaSlicer met een alternatieve data directory voor presets en configuratie.
+
+### Voordelen
+
+- presets en instellingen blijven gescheiden van productie
+- veilig om te experimenteren
+- geen risico op het overschrijven van wichtige presets
+
+---
+
+*Laatst bijgewerkt: 2026-04-29*

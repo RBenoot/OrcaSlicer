@@ -1,6 +1,7 @@
 #include "SyncStatusPanel.hpp"
 #include "SyncManager.hpp"
 #include "GUI_App.hpp"
+#include "MainFrame.hpp"
 #include "Widgets/Button.hpp"
 #include "Widgets/Label.hpp"
 #include <wx/sizer.h>
@@ -16,30 +17,31 @@ SyncStatusPanel::SyncStatusPanel(wxWindow* parent, wxWindowID id)
 {
     SetBackgroundColour(wxColour(48, 48, 48));
 
-    wxBoxSizer* sizer = new wxBoxSizer(wxHORIZONTAL);
-    
+    wxBoxSizer* sizer = new wxBoxSizer(wxVERTICAL);
+
     m_status_text = new wxStaticText(this, wxID_ANY, _("Offline"));
     m_status_text->SetForegroundColour(wxColour(180, 180, 180));
-    
+
     m_sync_button = new Button(this, _("Sync Now"));
     m_sync_button->SetBackgroundColour(wxColour(0, 145, 255));
     m_sync_button->SetTextColor(wxColour(255, 255, 255));
-    
-    sizer->Add(m_status_text, 1, wxALIGN_CENTER_VERTICAL | wxLEFT, 10);
-    sizer->Add(m_sync_button, 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, 10);
-    
+
+    sizer->Add(m_status_text, 1, wxALIGN_CENTER_HORIZONTAL | wxTOP | wxBOTTOM, 5);
+    sizer->Add(m_sync_button, 0, wxALIGN_CENTER_HORIZONTAL | wxBOTTOM, 5);
+
     SetSizer(sizer);
-    SetMinSize(wxSize(200, 36));
-    
+    SetMinSize(wxSize(200, 80));
+    SetSize(wxSize(200, 80));
+
     Bind(wxEVT_SIZE, [this](wxSizeEvent& e) {
         Layout();
         e.Skip();
     });
-    
+
     m_sync_button->Bind(wxEVT_BUTTON, &SyncStatusPanel::on_sync_click, this);
     m_refresh_timer.Start(5000);
     Bind(wxEVT_TIMER, &SyncStatusPanel::on_timer, this);
-    
+
     update_ui();
 }
 
@@ -91,7 +93,7 @@ void SyncStatusPanel::update_ui()
 {
     wxColour color = get_state_color();
     m_status_text->SetForegroundColour(color);
-    
+
     switch (m_state) {
         case STATE_OFFLINE:
             m_status_text->SetLabel(_("Offline"));
@@ -134,18 +136,33 @@ wxColour SyncStatusPanel::get_state_color() const
 void SyncStatusPanel::on_sync_click(wxCommandEvent& event)
 {
     set_state(STATE_SYNCING);
-    
+
     auto sync_mgr = SyncManager::instance();
     if (sync_mgr) {
+        sync_mgr->set_preset_bundle(wxGetApp().preset_bundle);
+
         if (!sync_mgr->is_online()) {
-            // Zorg dat de database geconfigureerd is
             auto db = ConfigDatabase::instance();
             sync_mgr->set_config_database(db);
-            
-            // Log in met de hardcoded admin credentials uit de backend
-            sync_mgr->login_and_sync("admin", "admin", [](bool success, const std::string& err) {});
+            sync_mgr->login_and_sync("admin", "admin", [this](bool success, const std::string& err) {
+                if (success) {
+                    wxGetApp().reload_settings();
+                    wxGetApp().mainframe->update_side_preset_ui();
+                } else {
+                    set_state(STATE_ERROR);
+                    set_error_message(err);
+                }
+            });
         } else {
-            sync_mgr->sync_async();
+            sync_mgr->sync([this](bool success, const std::string& err) {
+                if (success) {
+                    wxGetApp().reload_settings();
+                    wxGetApp().mainframe->update_side_preset_ui();
+                } else {
+                    set_state(STATE_ERROR);
+                    set_error_message(err);
+                }
+            });
         }
     }
 }

@@ -148,6 +148,29 @@ All updated build instructions for Windows, macOS, and Linux are now available o
 
 Please refer to the wiki to ensure you're following the latest and most accurate steps for your platform.
 
+# Local Development & Testing
+
+When testing locally without affecting your regular presets and configuration, you can use a separate data directory by launching OrcaSlicer with the `--datadir` flag:
+
+## Windows
+
+Create a `.bat` file next to `orca-slicer.exe` with the following content:
+
+```bat
+start "" "orca-slicer.exe" --datadir "C:\Mijn_Orca_Dev_Data"
+```
+
+This allows you to:
+- Test preset changes without risking your production configuration
+- Have multiple test environments with different settings
+- Easily reset your testing environment by clearing the custom data folder
+
+## Linux / macOS
+
+```bash
+./OrcaSlicer.AppImage --datadir ~/Orca_Dev_Data
+```
+
 # Klipper Note
 
 If you're running Klipper, it's recommended to add the following configuration to your `printer.cfg` file.

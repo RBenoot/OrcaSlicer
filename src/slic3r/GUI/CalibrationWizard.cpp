@@ -4,6 +4,7 @@
 #include "MsgDialog.hpp"
 #include "CalibrationWizardPage.hpp"
 #include "../../libslic3r/calib.hpp"
+#include "../../libslic3r/Time.hpp"
 #include "Tabbook.hpp"
 #include "CaliHistoryDialog.hpp"
 
@@ -278,6 +279,7 @@ bool CalibrationWizard::save_preset(const std::string &old_preset_name, const st
         if (wxGetApp().is_user_login()) new_preset->user_id = wxGetApp().getAgent()->get_user_id();
         BOOST_LOG_TRIVIAL(info) << "sync_preset: create preset = " << new_preset->name;
     }
+    new_preset->updated_time = (long long)Slic3r::Utils::get_current_time_utc();
     new_preset->save_info();
 
     // Mark the print & filament enabled if they are compatible with the currently selected preset.
@@ -362,6 +364,7 @@ bool CalibrationWizard::save_preset_with_index(const std::string &old_preset_nam
         if (wxGetApp().is_user_login()) new_preset->user_id = wxGetApp().getAgent()->get_user_id();
         BOOST_LOG_TRIVIAL(info) << "sync_preset: create preset = " << new_preset->name;
     }
+    new_preset->updated_time = (long long)Slic3r::Utils::get_current_time_utc();
     new_preset->save_info();
 
     // Mark the print & filament enabled if they are compatible with the currently selected preset.

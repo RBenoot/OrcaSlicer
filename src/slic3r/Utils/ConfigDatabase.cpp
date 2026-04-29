@@ -22,10 +22,11 @@ struct ConfigDatabaseRestClient::Priv {
     
     PresetRecord parse_preset(const json& j) {
         PresetRecord p;
+        try {
         auto get_str = [&j](const std::string& key) { return (j.contains(key) && !j[key].is_null()) ? j[key].get<std::string>() : ""; };
         auto get_bool = [&j](const std::string& key) { return (j.contains(key) && !j[key].is_null()) ? j[key].get<bool>() : false; };
         auto get_int = [&j](const std::string& key) { return (j.contains(key) && !j[key].is_null()) ? j[key].get<int64_t>() : 0; };
-        
+
         p.id = get_str("id");
         p.vendor_id = get_str("vendorId");
         p.vendor_name = get_str("vendorName");
@@ -42,11 +43,15 @@ struct ConfigDatabaseRestClient::Priv {
         p.user_id = get_str("userId");
         p.created_at = get_int("createdAt");
         p.updated_at = get_int("updatedAt");
-        
+
         if (j.contains("config") && !j["config"].is_null()) {
             p.config = j["config"];
         } else {
             p.config = json::object();
+        }
+        } catch (const std::exception& e) {
+            BOOST_LOG_TRIVIAL(error) << "parse_preset error: " << e.what() << " | JSON: " << j.dump(200);
+            throw;
         }
         return p;
     }
@@ -298,17 +303,25 @@ void ConfigDatabaseRestClient::sync_pull(
                     } else {
                         result.next_cursor = "";
                     }
-                    
+
                     for (const auto& item : j["upserts"]) {
-                        result.upserts.push_back(p->parse_preset(item));
+                        try {
+                            result.upserts.push_back(p->parse_preset(item));
+                        } catch (const std::exception& e) {
+                            std::string preset_name = item.contains("name") ? item["name"].get<std::string>() : "unknown";
+                            BOOST_LOG_TRIVIAL(error) << "Failed to parse preset '" << preset_name << "': " << e.what();
+                            BOOST_LOG_TRIVIAL(error) << "Preset data: " << item.dump(100);
+                            throw;
+                        }
                     }
-                    
+
                     for (const auto& item : j["deletes"]) {
                         result.deletes.push_back(item.get<std::string>());
                     }
-                    
+
                     callback(true, result, "");
                 } catch (const std::exception& e) {
+                    BOOST_LOG_TRIVIAL(error) << "Sync pull parse error: " << e.what();
                     callback(false, {}, std::string("Parse error: ") + e.what());
                 }
             } else {

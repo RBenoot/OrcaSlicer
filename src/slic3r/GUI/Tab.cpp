@@ -26,6 +26,7 @@
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/algorithm/string/replace.hpp>
 #include "libslic3r/libslic3r.h"
+#include "libslic3r/Time.hpp"
 #include "slic3r/GUI/OptionsGroup.hpp"
 #include "wxExtensions.hpp"
 #include "PresetComboBoxes.hpp"
@@ -6462,6 +6463,7 @@ void Tab::save_preset(std::string name /*= ""*/, bool detach, bool save_to_proje
             new_preset->user_id = wxGetApp().getAgent()->get_user_id();
         BOOST_LOG_TRIVIAL(info) << "sync_preset: create preset = " << new_preset->name;
     }
+    new_preset->updated_time = (long long)Slic3r::Utils::get_current_time_utc();
     new_preset->save_info();
     
     // Trigger sync manager to push to server

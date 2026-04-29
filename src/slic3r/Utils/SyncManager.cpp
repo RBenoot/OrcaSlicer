@@ -1,5 +1,6 @@
 #include "SyncManager.hpp"
 #include "libslic3r/PresetBundle.hpp"
+#include "libslic3r/PrintConfig.hpp"
 #include "ConfigDatabase.hpp"
 #include <boost/log/trivial.hpp>
 #include <boost/core/null_deleter.hpp>
@@ -186,6 +187,58 @@ void SyncManager::pull_from_server()
             if (m_bundle) {
                 for (const auto& record : result.upserts) {
                     BOOST_LOG_TRIVIAL(info) << "Pulled preset: " << record.name;
+
+                    PresetCollection* collection = nullptr;
+                    if (record.type == "filament") collection = &m_bundle->filaments;
+                    else if (record.type == "print") collection = &m_bundle->prints;
+                    else if (record.type == "printer") collection = &m_bundle->printers;
+                    else if (record.type == "sla_print") collection = &m_bundle->sla_prints;
+                    else if (record.type == "sla_material") collection = &m_bundle->sla_materials;
+
+                    if (collection) {
+                        Preset new_preset(Preset::TYPE_INVALID, record.name, record.is_system);
+                        new_preset.setting_id = record.setting_id;
+                        new_preset.updated_time = record.updated_time;
+
+                        if (!record.config.is_null()) {
+                            for (auto it = record.config.begin(); it != record.config.end(); ++it) {
+                                const std::string& key = it.key();
+                                if (key == "inherits" || key == "name" || key == "type" ||
+                                    key == "setting_id" || key == "base_id" || key == "filament_id") {
+                                    continue;
+                                }
+                                const auto& value = it.value();
+                                std::string str_value;
+                                if (value.is_number_integer()) {
+                                    str_value = std::to_string(value.get<int64_t>());
+                                } else if (value.is_number_float()) {
+                                    str_value = std::to_string(value.get<double>());
+                                } else if (value.is_string()) {
+                                    str_value = value.get<std::string>();
+                                } else if (value.is_boolean()) {
+                                    str_value = value.get<bool>() ? "1" : "0";
+                                } else {
+                                    continue;
+                                }
+                                try {
+                                    ConfigSubstitutionContext ctxt{ ForwardCompatibilitySubstitutionRule::Enable };
+                                    new_preset.config.set_deserialize_nothrow(key, str_value, ctxt, false);
+                                } catch (const std::exception& e) {
+                                    BOOST_LOG_TRIVIAL(warning) << "Skipping option '" << key << "': " << e.what();
+                                }
+                            }
+                        }
+
+                        try {
+                            collection->load_preset("", record.name, std::move(new_preset.config), false);
+                        } catch (const std::exception& e) {
+                            BOOST_LOG_TRIVIAL(warning) << "Failed to load preset '" << record.name << "': " << e.what();
+                        }
+                    }
+                }
+
+                for (const auto& delete_id : result.deletes) {
+                    BOOST_LOG_TRIVIAL(info) << "Deleting preset from local: " << delete_id;
                 }
             }
             
